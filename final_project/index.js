@@ -8,28 +8,27 @@ const app = express();
 
 app.use(express.json());
 
-app.use("/customer",session({secret:"fingerprint_customer",resave: true, saveUninitialized: true}))
+app.use("/customer", session({ secret: "fingerprint_customer", resave: true, saveUninitialized: true }));
 
 app.use("/customer/auth/*", function auth(req, res, next) {
-    // 检查请求头中是否包含授权信息
-    const authHeader = req.headers['authorization'];
-    if (authHeader) {
-        const token = authHeader.split(' ')[1]; // 提取令牌
-        // 验证 JWT 令牌
-        jwt.verify(token, 'your_secret_key', (err, user) => {
+    const token = req.session.token['token'];
+    console.log(token);
+    if (token) {
+        jwt.verify(token, "your_secret_key", (err, decoded) => {
             if (err) {
-                return res.status(403).json({ message: "用户未认证" });
+                return res.status(401).json({ message: "Invalid token" });
+            } else {
+                req.user = decoded;
+                next();
             }
-            req.user = user; // 将用户信息存储在请求对象中
-            next(); // 继续执行下一个中间件或路由处理程序
         });
     } else {
-        return res.status(403).json({ message: "用户未登录" });
+        return res.status(401).json({ message: "Not login" });
     }
 });
  
-const PORT =5000;
 
+const PORT = 5000;
 app.use("/customer", customer_routes);
 app.use("/", genl_routes);
 
